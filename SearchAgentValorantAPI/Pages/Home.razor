@@ -1,0 +1,72 @@
+﻿@page "/"
+@using SearchAgentValorantAPI.Models
+@inject HttpClient Http
+
+<PageTitle>Buscar Agente VALORANT</PageTitle>
+
+<h1>Buscar Agente VALORANT</h1>
+
+<div class="mb-2">
+    <label for="uuid">UUID do Agente:</label>
+    <input id="uuid" class="form-control" @bind="uuid" />
+</div>
+
+<button class="btn btn-primary" @onclick="BuscarAgente" disabled="@carregando">
+    Buscar Agente
+</button>
+
+<hr />
+
+@if (carregando)
+{
+    <p><em>Carregando...</em></p>
+}
+else if (!string.IsNullOrEmpty(erro))
+{
+    <p class="text-danger">@erro</p>
+}
+else if (agente is not null)
+{
+    <h3>@agente.DisplayName</h3>
+    <img src="@agente.FullPortrait" alt="@agente.DisplayName" style="max-height: 400px;" />
+    <p class="mt-3">@agente.Description</p>
+}
+
+@code {
+    private string uuid = "e370fa57-4757-3604-3648-499e1f642d3f";
+    private AgentData? agente;
+    private string? erro;
+    private bool carregando;
+
+    private async Task BuscarAgente()
+    {
+        agente = null;
+        erro = null;
+
+        if (string.IsNullOrWhiteSpace(uuid))
+        {
+            erro = "Informe o UUID do agente.";
+            return;
+        }
+
+        carregando = true;
+
+        try
+        {
+            var url = $"https://valorant-api.com/v1/agents/{uuid.Trim()}";
+            var resposta = await Http.GetFromJsonAsync<AgentResponse>(url);
+            agente = resposta?.Data;
+
+            if (agente is null)
+                erro = "Agente não encontrado.";
+        }
+        catch (HttpRequestException)
+        {
+            erro = "UUID inválido ou erro ao consultar a API.";
+        }
+        finally
+        {
+            carregando = false;
+        }
+    }
+}
